@@ -1,0 +1,38 @@
+variables:
+  projectname: project_management
+  version: 0.0.1-SNAPSHOT
+  projectuser: admin
+  projectpath: /datas/$projectuser/
+
+stages:
+  - build
+  - deploy
+  - checklog
+
+build:
+  stage: build
+  variables:
+    GIT_STRATEGY: clone
+  script:
+    - mvn clean install -DskipTests=true
+  tags:
+    - lab-server
+
+deploy:
+  stage: deploy
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - sudo cp target/$projectname-$version.jar $projectpath
+    - sudo chown -R $projectuser. $projectpath
+    - sudo kill -9 $(ps -ef | grep $projectname-$version.jar | grep -v grep | awk '{print $2}')
+    - sudo su $projectuser -c "cd $projectpath; nohup java -jar $projectname-$version.jar > nohup.out 2>&1 &"
+  tags:
+    - lab-server
+
+checklog:
+  stage: checklog
+  script:
+    - tail -n 100 $projectpath/nohup.out
+  tags:
+    - lab-server
