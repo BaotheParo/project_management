@@ -2,7 +2,7 @@ variables:
   projectname: project_management
   version: 0.0.1-SNAPSHOT
   projectuser: admin
-  projectpath: /datas/$projectuser/
+  projectpath: /project_management
 
 stages:
   - build
