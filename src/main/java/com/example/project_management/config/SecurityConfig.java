@@ -11,19 +11,24 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, UserDetailsService userDetailsService) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/projects/**", "/api/tasks/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/projects/**").hasAnyAuthority("ADMIN", "MANAGER", "MEMBER")
+                        .requestMatchers("/api/tasks/**").hasAnyAuthority("ADMIN", "MANAGER", "MEMBER")
+                        .requestMatchers("/api/user-projects/**").hasAuthority("ADMIN")
                         .anyRequest().authenticated()
                 )
-                .csrf(csrf -> csrf.disable());
+                .csrf(csrf -> csrf.disable())
+                .addFilterBefore(new JwtAuthenticationFilter(userDetailsService), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
@@ -37,7 +42,7 @@ public class SecurityConfig {
             return org.springframework.security.core.userdetails.User
                     .withUsername(user.getUsername())
                     .password(user.getPasswordHash())
-                    .roles(user.getRoles().stream()
+                    .authorities(user.getRoles().stream()
                             .map(role -> role.getRoleName())
                             .toArray(String[]::new))
                     .build();
